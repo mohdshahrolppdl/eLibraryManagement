@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eLibrary Book Loan App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 90vw;
+            margin: 0 auto;
+        }
+        /* Custom styles for loading spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6b7280; /* Gray-500 */
+        }
+        .password-toggle:hover {
+            color: #1f2937; /* Gray-800 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container bg-white shadow-xl rounded-2xl p-6 md:p-8 space-y-8">
+        <!-- Header -->
+        <header class="text-center">
+            <h1 class="text-4xl font-bold text-gray-800">eLibrary Management</h1>
+            <p class="text-gray-600 mt-2">Manage book loans with ease.</p>
+        </header>
+
+        <!-- Loading & Message Section -->
+        <div id="loading-container" class="flex justify-center items-center h-24 hidden">
+            <div class="spinner"></div>
+            <span id="loading-message" class="ml-4 text-lg text-gray-600">Loading...</span>
+        </div>
+
+        <!-- Message Box for user feedback -->
+        <div id="message-box" class="fixed inset-x-0 bottom-4 w-11/12 md:w-1/3 mx-auto p-4 rounded-lg shadow-xl text-center z-50 transition-transform transform translate-y-full opacity-0">
+            <span id="message-text" class="font-medium text-white"></span>
+        </div>
+
+        <!-- Main Content -->
+        <div id="app-content" class="hidden">
+            <!-- Tab Navigation -->
+            <div class="flex justify-center space-x-4 mb-6">
+                <button id="books-tab" class="px-6 py-2 rounded-xl text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">Books</button>
+                <button id="students-tab" class="px-6 py-2 rounded-xl text-lg font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors">Students</button>
+                <button id="transactions-tab" class="px-6 py-2 rounded-xl text-lg font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors">Transactions</button>
+            </div>
+
+            <!-- Books Section -->
+            <section id="books-section" class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Books</h2>
+                <div class="bg-gray-50 p-4 rounded-xl shadow-inner max-h-96 overflow-y-auto">
+                    <ul id="books-list" class="space-y-4">
+                        <!-- Book items will be dynamically inserted here -->
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Students Section -->
+            <section id="students-section" class="space-y-6 hidden">
+                <h2 class="text-2xl font-semibold text-gray-700">Students</h2>
+                <div class="bg-gray-50 p-4 rounded-xl shadow-inner max-h-96 overflow-y-auto">
+                    <ul id="students-list" class="space-y-4">
+                        <!-- Student items will be dynamically inserted here -->
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section id="transactions-section" class="space-y-6 hidden">
+                <h2 class="text-2xl font-semibold text-gray-700">Manage Loans</h2>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <form id="loan-form" class="space-y-4">
+                        <div>
+                            <label for="student-id" class="block text-sm font-medium text-gray-700">Student ID</label>
+                            <input type="text" id="student-id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                        </div>
+                        <div>
+                            <label for="book-id" class="block text-sm font-medium text-gray-700">Book ID</label>
+                            <input type="text" id="book-id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                        </div>
+                        <div class="flex justify-between space-x-4">
+                            <button type="button" id="borrow-button" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                Borrow Book
+                            </button>
+                            <button type="button" id="return-button" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                                Return Book
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 mt-8">Active Loans</h3>
+                <div class="bg-gray-50 p-4 rounded-xl shadow-inner max-h-96 overflow-y-auto">
+                    <ul id="loans-list" class="space-y-4">
+                        <!-- Active loan items will be dynamically inserted here -->
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <!-- Login Form Section -->
+        <div id="login-container" class="space-y-8 max-w-sm mx-auto">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-800">eLibrary Login</h2>
+                <p class="text-gray-600 mt-1">Sign in with your librarian account.</p>
+            </div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="login-username" class="block text-lg font-medium text-gray-700">Username:</label>
+                    <input type="text" id="login-username" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-lg font-medium text-gray-700">Password:</label>
+                    <div class="password-container">
+                        <input type="password" id="login-password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 pr-10">
+                        <span id="password-toggle" class="password-toggle">
+                            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </span>
+                    </div>
+                </div>
+                <button type="submit" id="login-button" class="w-full py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                    Log In
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration ---
+        // IMPORTANT: Replace this URL with the new Web App URL after deploying the Apps Script.
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxC4E8Uwg7ArRXCCClZbL2Qybfz4SaMvCGgxH2HPyBSx9DwcpjGincbrgiC41SSYV2K/exec';
+        
+        // --- DOM Elements ---
+        const appContent = document.getElementById('app-content');
+        const loginContainer = document.getElementById('login-container');
+        const loadingContainer = document.getElementById('loading-container');
+        const loadingMessage = document.getElementById('loading-message');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+
+        // Tabs
+        const booksTab = document.getElementById('books-tab');
+        const studentsTab = document.getElementById('students-tab');
+        const transactionsTab = document.getElementById('transactions-tab');
+        const booksSection = document.getElementById('books-section');
+        const studentsSection = document.getElementById('students-section');
+        const transactionsSection = document.getElementById('transactions-section');
+
+        // Lists
+        const booksList = document.getElementById('books-list');
+        const studentsList = document.getElementById('students-list');
+        const loansList = document.getElementById('loans-list');
+        const loanForm = document.getElementById('loan-form');
+        const studentIdInput = document.getElementById('student-id');
+        const bookIdInput = document.getElementById('book-id');
+        const borrowButton = document.getElementById('borrow-button');
+        const returnButton = document.getElementById('return-button');
+
+        // Login form
+        const loginForm = document.getElementById('login-form');
+        const loginUsernameInput = document.getElementById('login-username');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginButton = document.getElementById('login-button');
+        const passwordToggle = document.getElementById('password-toggle');
+        const eyeIcon = document.getElementById('eye-icon');
+
+        // --- State Management ---
+        let allBooks = [];
+        let allStudents = [];
+        let allTransactions = [];
+        let isLoggedIn = false;
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a message box with a given message and style.
+         * @param {string} message The message to display.
+         * @param {string} type The type of message ('success' or 'error').
+         */
+        function showMessage(message, type) {
+            messageText.textContent = message;
+            if (type === 'success') {
+                messageBox.className = 'fixed inset-x-0 bottom-4 w-11/12 md:w-1/3 mx-auto p-4 rounded-lg shadow-xl text-center z-50 transition-all transform translate-y-0 opacity-100 bg-green-500';
+            } else {
+                messageBox.className = 'fixed inset-x-0 bottom-4 w-11/12 md:w-1/3 mx-auto p-4 rounded-lg shadow-xl text-center z-50 transition-all transform translate-y-full opacity-0 bg-red-500';
+            }
+            setTimeout(() => {
+                messageBox.className = 'fixed inset-x-0 bottom-4 w-11/12 md:w-1/3 mx-auto p-4 rounded-lg shadow-xl text-center z-50 transition-all transform translate-y-full opacity-0';
+            }, 3000);
+        }
+
+        /**
+         * Toggles the loading spinner and message.
+         * @param {boolean} show Whether to show or hide the loading state.
+         * @param {string} message The message to display (optional).
+         */
+        function toggleLoading(show, message = 'Loading...') {
+            if (show) {
+                appContent.classList.add('hidden');
+                loginContainer.classList.add('hidden');
+                loadingContainer.classList.remove('hidden');
+                loadingMessage.textContent = message;
+            } else {
+                loadingContainer.classList.add('hidden');
+                if (isLoggedIn) {
+                    appContent.classList.remove('hidden');
+                } else {
+                    loginContainer.classList.remove('hidden');
+                }
+            }
+        }
+
+        // --- Data Fetching ---
+
+        /**
+         * Fetches data from a specific Google Sheet.
+         * @param {string} sheetName The name of the sheet to fetch.
+         * @returns {Promise<Array<object>>} The data from the sheet.
+         */
+        async function fetchData(sheetName) {
+            console.log(`Attempting to fetch data from sheet: "${sheetName}"`);
+            const url = `${SCRIPT_URL}?sheet=${sheetName}`;
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`Successfully fetched data from "${sheetName}".`);
+                    return result.data;
+                } else {
+                    console.error(`Error fetching from "${sheetName}":`, result.message);
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error(`Error fetching data from "${sheetName}":`, error);
+                showMessage(`Error: ${error.message}`, 'error');
+                return [];
+            }
+        }
+
+        /**
+         * Sends a POST request to the Google Apps Script to perform an action.
+         * @param {object} payload The data to send in the request body.
+         * @returns {Promise<object>} The response from the script.
+         */
+        async function sendRequest(payload) {
+            console.log("Sending payload:", JSON.stringify(payload, null, 2));
+            console.log("To SCRIPT_URL:", SCRIPT_URL);
+
+            toggleLoading(true, 'Processing request...');
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showMessage(result.message || 'Operation successful!', 'success');
+                } else {
+                    throw new Error(result.message);
+                }
+                return result;
+            } catch (error) {
+                console.error('Error sending request:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            } finally {
+                // The loading spinner is now controlled here.
+                toggleLoading(false);
+            }
+        }
+
+        /**
+         * Fetches all necessary data and re-renders the UI.
+         */
+        async function refreshData() {
+            toggleLoading(true, 'Fetching data from Google Sheet...');
+            try {
+                // Fetch all data concurrently using Promise.all
+                const [booksData, studentsData, transactionsData] = await Promise.all([
+                    fetchData('Books'),
+                    fetchData('Students'),
+                    fetchData('Borrowing Transactions')
+                ]);
+                
+                allBooks = booksData;
+                allStudents = studentsData;
+                allTransactions = transactionsData;
+
+                renderBooks();
+                renderStudents();
+                renderLoans();
+            } catch (error) {
+                console.error('Failed to refresh data:', error);
+                showMessage('Failed to load app data. Please check your sheet names and URL.', 'error');
+                isLoggedIn = false; // Reset login state on failure
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        // --- Rendering Functions ---
+
+        /**
+         * Renders the list of books.
+         */
+        function renderBooks() {
+            booksList.innerHTML = '';
+            const booksHtml = allBooks.map(book => `
+                <li class="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800">${book.Title}</h4>
+                        <p class="text-gray-500 text-sm">Author: ${book.Author} | Status: <span class="font-semibold text-${book.Status === 'Available' ? 'green' : 'red'}-600">${book.Status}</span></p>
+                    </div>
+                    <span class="text-sm text-gray-400">ID: ${book.BookID}</span>
+                </li>
+            `).join('');
+            booksList.innerHTML = booksHtml;
+        }
+
+        /**
+         * Renders the list of students.
+         */
+        function renderStudents() {
+            studentsList.innerHTML = '';
+            const studentsHtml = allStudents.map(student => `
+                <li class="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800">${student.Name}</h4>
+                        <p class="text-gray-500 text-sm">Grade: ${student['Grade/Class']} | Books Borrowed: <span class="font-semibold text-gray-600">${student.BooksBorrowed}</span></p>
+                    </div>
+                    <span class="text-sm text-gray-400">ID: ${student.StudentID}</span>
+                </li>
+            `).join('');
+            studentsList.innerHTML = studentsHtml;
+        }
+
+        /**
+         * Renders the list of active loans.
+         */
+        function renderLoans() {
+            loansList.innerHTML = '';
+            const activeLoans = allTransactions.filter(loan => loan.Status === 'Active');
+            const loansHtml = activeLoans.map(loan => {
+                const book = allBooks.find(b => b.BookID == loan.BookID) || {};
+                const student = allStudents.find(s => s.StudentID == loan.StudentID) || {};
+                return `
+                    <li class="bg-white p-4 rounded-lg shadow-sm flex items-start space-x-4 transition-shadow hover:shadow-md">
+                        <div class="flex-1">
+                            <h4 class="text-lg font-medium text-gray-800">Book: ${book.Title || 'Unknown'}</h4>
+                            <p class="text-gray-500 text-sm">Borrowed by: ${student.Name || 'Unknown'}</p>
+                            <p class="text-gray-500 text-sm">Due Date: <span class="font-semibold text-red-500">${loan.DueDate}</span></p>
+                        </div>
+                        <span class="text-sm text-gray-400">Transaction ID: ${loan.TransactionID}</span>
+                    </li>
+                `;
+            }).join('');
+            loansList.innerHTML = loansHtml;
+        }
+
+        // --- Event Handlers ---
+
+        /**
+         * Handles the login process.
+         */
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = loginUsernameInput.value.trim();
+            const password = loginPasswordInput.value.trim();
+            console.log(`Attempting login with username: "${username}" and password: "${password}"`);
+
+            if (!username || !password) {
+                showMessage('Please enter both username and password.', 'error');
+                return;
+            }
+
+            toggleLoading(true, 'Logging in...');
+            try {
+                const result = await sendRequest({
+                    action: 'LOGIN',
+                    username: username,
+                    password: password
+                });
+
+                if (result.success) {
+                    console.log('Login successful. Refreshing data...');
+                    isLoggedIn = true;
+                    showMessage('Login successful!', 'success');
+                    await refreshData(); 
+                } else {
+                    console.error('Login failed:', result.message);
+                    showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                console.error('An unexpected error occurred during login:', error);
+                showMessage('An unexpected error occurred. Please try again.', 'error');
+            } finally {
+                toggleLoading(false); 
+            }
+        }
+
+        /**
+         * Handles the book borrowing process.
+         */
+        async function handleBorrow() {
+            if (!isLoggedIn) {
+                showMessage('Please log in to perform this action.', 'error');
+                return;
+            }
+            const studentId = studentIdInput.value.trim();
+            const bookId = bookIdInput.value.trim();
+
+            if (!studentId || !bookId) {
+                showMessage('Please enter both Student ID and Book ID.', 'error');
+                return;
+            }
+
+            const book = allBooks.find(b => b.BookID == bookId);
+            const student = allStudents.find(s => s.StudentID == studentId);
+
+            if (!book || book.Status !== 'Available') {
+                showMessage('Book is not available or does not exist.', 'error');
+                return;
+            }
+
+            if (!student) {
+                showMessage('Student does not exist.', 'error');
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + 14);
+            const dueDate = futureDate.toISOString().split('T')[0];
+            
+            const transactionPayload = {
+                TransactionID: `TRX-${Date.now()}`,
+                StudentID: studentId,
+                BookID: bookId,
+                BorrowDate: today,
+                DueDate: dueDate,
+                Status: 'Active'
+            };
+
+            const bookUpdatePayload = {
+                action: 'UPDATE_ROW',
+                sheet: 'Books',
+                identifierColumn: 'BookID',
+                identifierValue: bookId,
+                updates: { Status: 'Borrowed', LastBorrowed_Date: today }
+            };
+
+            const studentUpdatePayload = {
+                action: 'UPDATE_ROW',
+                sheet: 'Students',
+                identifierColumn: 'StudentID',
+                identifierValue: studentId,
+                updates: { BooksBorrowed: student.BooksBorrowed + 1 }
+            };
+
+            const addTransactionResult = await sendRequest({
+                action: 'ADD_ROW',
+                sheet: 'Borrowing Transactions',
+                data: transactionPayload
+            });
+
+            if (addTransactionResult.success) {
+                await sendRequest(bookUpdatePayload);
+                await sendRequest(studentUpdatePayload);
+                await refreshData();
+                loanForm.reset();
+            }
+        }
+
+        /**
+         * Handles the book returning process.
+         */
+        async function handleReturn() {
+            if (!isLoggedIn) {
+                showMessage('Please log in to perform this action.', 'error');
+                return;
+            }
+            const studentId = studentIdInput.value.trim();
+            const bookId = bookIdInput.value.trim();
+
+            if (!studentId || !bookId) {
+                showMessage('Please enter both Student ID and Book ID.', 'error');
+                return;
+            }
+
+            const activeLoan = allTransactions.find(t => 
+                t.StudentID == studentId && 
+                t.BookID == bookId && 
+                t.Status === 'Active'
+            );
+
+            if (!activeLoan) {
+                showMessage('No active loan found for this student and book.', 'error');
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+
+            const transactionUpdatePayload = {
+                action: 'UPDATE_ROW',
+                sheet: 'Borrowing Transactions',
+                identifierColumn: 'TransactionID',
+                identifierValue: activeLoan.TransactionID,
+                updates: { Status: 'Returned', ReturnDate: today }
+            };
+
+            const bookUpdatePayload = {
+                action: 'UPDATE_ROW',
+                sheet: 'Books',
+                identifierColumn: 'BookID',
+                identifierValue: bookId,
+                updates: { Status: 'Available' }
+            };
+
+            const student = allStudents.find(s => s.StudentID == studentId);
+            const studentUpdatePayload = {
+                action: 'UPDATE_ROW',
+                sheet: 'Students',
+                identifierColumn: 'StudentID',
+                identifierValue: studentId,
+                updates: { BooksBorrowed: Math.max(0, student.BooksBorrowed - 1) }
+            };
+
+            const transactionResult = await sendRequest(transactionUpdatePayload);
+
+            if (transactionResult.success) {
+                await sendRequest(bookUpdatePayload);
+                await sendRequest(studentUpdatePayload);
+                await refreshData();
+                loanForm.reset();
+            }
+        }
+        
+        /**
+         * Toggles the visibility of the password field.
+         */
+        function togglePasswordVisibility() {
+            if (loginPasswordInput.type === 'password') {
+                loginPasswordInput.type = 'text';
+                eyeIcon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-7-10-7a1.8 1.8 0 0 1 2.22-2.22"/><path d="M19.78 19.78a2.53 2.53 0 0 0-3.56-3.56"/><path d="M10.5 10.5a2.53 2.53 0 0 0 3.56 3.56"/><path d="m2 2 20 20"/>`; // eye-off icon
+            } else {
+                loginPasswordInput.type = 'password';
+                eyeIcon.innerHTML = `<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>`; // eye icon
+            }
+        }
+
+        // --- Initialisation & Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tab functionality
+            booksTab.addEventListener('click', () => {
+                booksTab.classList.replace('bg-gray-200', 'bg-blue-600');
+                booksTab.classList.replace('text-gray-700', 'text-white');
+                studentsTab.classList.replace('bg-blue-600', 'bg-gray-200');
+                studentsTab.classList.replace('text-white', 'text-gray-700');
+                transactionsTab.classList.replace('bg-blue-600', 'bg-gray-200');
+                transactionsTab.classList.replace('text-white', 'text-gray-700');
+                booksSection.classList.remove('hidden');
+                studentsSection.classList.add('hidden');
+                transactionsSection.classList.add('hidden');
+            });
+
+            studentsTab.addEventListener('click', () => {
+                studentsTab.classList.replace('bg-gray-200', 'bg-blue-600');
+                studentsTab.classList.replace('text-gray-700', 'text-white');
+                booksTab.classList.replace('bg-blue-600', 'bg-gray-200');
+                booksTab.classList.replace('text-white', 'text-gray-700');
+                transactionsTab.classList.replace('bg-blue-600', 'bg-gray-200');
+                transactionsTab.classList.replace('text-white', 'text-gray-700');
+                booksSection.classList.add('hidden');
+                studentsSection.classList.remove('hidden');
+                transactionsSection.classList.add('hidden');
+            });
+
+            transactionsTab.addEventListener('click', () => {
+                transactionsTab.classList.replace('bg-gray-200', 'bg-blue-600');
+                transactionsTab.classList.replace('text-gray-700', 'text-white');
+                booksTab.classList.replace('bg-blue-600', 'bg-gray-200');
+                booksTab.classList.replace('text-white', 'text-gray-700');
+                studentsTab.classList.replace('bg-blue-600', 'bg-gray-200');
+                studentsTab.classList.replace('text-white', 'text-gray-700');
+                booksSection.classList.add('hidden');
+                studentsSection.classList.add('hidden');
+                transactionsSection.classList.remove('hidden');
+            });
+
+            // Transaction buttons
+            borrowButton.addEventListener('click', handleBorrow);
+            returnButton.addEventListener('click', handleReturn);
+
+            // Login form submission
+            loginForm.addEventListener('submit', handleLogin);
+
+            // Password toggle functionality
+            passwordToggle.addEventListener('click', togglePasswordVisibility);
+        });
+    </script>
+</body>
+</html>
